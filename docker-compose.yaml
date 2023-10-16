@@ -1,0 +1,9 @@
+version: '3'
+services:
+  queuing_api:
+    build: .
+    volumes:
+      - .:/usr/app/
+      - /usr/app/node_modules
+    ports:
+      - 8080:8080
