@@ -15,6 +15,12 @@ if (config.NODE_ENV === 'production') {
   )
 }
 
+if (config.NODE_ENV === 'test') {
+  transports.forEach((transport) => {
+    transport.silent = true
+  })
+}
+
 const LoggerInstance = winston.createLogger({
   level: config.logs.level,
   levels: winston.config.npm.levels,

@@ -7,19 +7,18 @@ module.exports = (app) => {
   router.get(
     '/',
     container(async (req) => {
-      return CustomResponse(200, `Hello World`)
+      return CustomResponse(200, `OK`)
     }),
   )
 
   router.get(
     '/health',
     container(async (req) => {
-      return CustomResponse(200, `Hello World`)
+      return CustomResponse(200, `OK`)
     }),
   )
 
-  require('./routes/ticket')(router);
-
+  require('./routes/ticket')(router)
 
   return router
 }
