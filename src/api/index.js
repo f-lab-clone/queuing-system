@@ -1,12 +1,8 @@
 const { Router } = require('express')
-const logger = $require('loaders/logger')
-const redis = $require('loaders/redis')
-const { CustomResponse, validator, container } = $require('api/middlewares')
-const TicketStoreService = $require('services/ticketStore')
+const { CustomResponse, container } = $require('api/middlewares')
 
-module.exports = () => {
+module.exports = (app) => {
   const router = Router()
-  const ticketStoreService = new TicketStoreService(redis)
 
   router.get(
     '/',
@@ -22,20 +18,8 @@ module.exports = () => {
     }),
   )
 
-  router.post(
-    '/ticket',
-    validator.mw([
-      validator.body('eventId').isInt(),
-      validator.body('userId').isInt(),
-    ]),
-    container(async (req) => {
-      logger.debug('Calling POST /ticket with body: %o', req.body)
-      const { eventId, userId } = req.body
+  require('./routes/ticket')(router);
 
-      await ticketStoreService.push(eventId, userId)
-      return CustomResponse(201, `Created!`)
-    }),
-  )
 
   return router
 }
