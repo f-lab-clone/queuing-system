@@ -38,16 +38,22 @@ module.exports = (app) => {
       const { eventId, userId } = req.params
 
       const ticketStoreService = new TicketStoreService(redis)
-      const offset = await ticketStoreService.getOffsetFromWaiting(
+      let isWaiting = true
+      let offset = await ticketStoreService.getOffsetFromWaiting(
         eventId,
         userId,
       )
-      if (!offset) return CustomResponse(404, `Ticket Not Found!`)
+      if (offset == null) {
+        isWaiting = false
+        offset = await ticketStoreService.getOffsetFromRunning(eventId, userId)
+      }
+
+      if (offset == null) return CustomResponse(404, `Ticket Not Found!`)
 
       return CustomResponse(200, `Success!`, {
         eventId,
         userId,
-        isWaiting: true,
+        isWaiting,
         offset,
       })
     }),

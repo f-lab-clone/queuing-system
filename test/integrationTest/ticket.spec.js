@@ -4,8 +4,11 @@ const { GenericContainer } = require('testcontainers')
 const expect = chai.expect
 chai.use(chaiHttp)
 
-describe('Health', () => {
+describe('Ticket', () => {
   let server = null
+  let redis = null
+  let ticketStoreService = null
+
   beforeAll(async () => {
     container = await new GenericContainer('redis')
       .withExposedPorts(6379)
@@ -17,7 +20,21 @@ describe('Health', () => {
     }
 
     server = require('../../src/api')
+    redis = $require('loaders/redis')
+    const TicketStoreService = $require('services/ticketStore')
+    ticketStoreService = new TicketStoreService(redis)
   })
+
+  beforeEach(async () => {
+    await redis.flushAll()
+  })
+
+  async function queueMovingJob(eventId, count) {
+    const tickets = await ticketStoreService.shiftFromWaiting(eventId, count)
+    for (const { value, score } of tickets) {
+      await ticketStoreService.pushIntoRunning(eventId, value, score)
+    }
+  }
 
   describe('POST /ticket 은', () => {
     describe('성공시', () => {
@@ -46,7 +63,7 @@ describe('Health', () => {
             eventId: 1,
             userId: i,
           })
-          expect(res.body.data.offset).to.deep.equal(i)
+          expect(res.body.data.offset).to.deep.equal(i - 1)
         }
       })
     })
@@ -64,6 +81,7 @@ describe('Health', () => {
         expect(res).to.have.status(200)
         expect(res.body.status).to.deep.equal(true)
       })
+
       it('{eventId, userId, isWaiting, timestamp, offset}을 반환한다', async () => {
         await chai.request(server).post('/ticket').send({
           eventId: 1,
@@ -76,6 +94,25 @@ describe('Health', () => {
         expect(res.body.data).to.have.property('userId')
         expect(res.body.data).to.have.property('isWaiting')
         expect(res.body.data).to.have.property('offset')
+      })
+
+      it('Running Queue Ticket은 IsWaiting = True를 반환한다.', async () => {
+        for (let i = 1; i < 10; i++) {
+          await chai.request(server).post('/ticket').send({
+            eventId: 1,
+            userId: i,
+          })
+        }
+
+        await queueMovingJob(1, 5)
+
+        const res1 = await chai.request(server).get(`/ticket/1/1`)
+        expect(res1.body.data.isWaiting).to.deep.equal(false)
+        expect(res1.body.data.offset).to.deep.equal(0)
+
+        const res2 = await chai.request(server).get(`/ticket/1/6`)
+        expect(res2.body.data.isWaiting).to.deep.equal(true)
+        expect(res2.body.data.offset).to.deep.equal(0)
       })
     })
     describe('실패시', () => {

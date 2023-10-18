@@ -34,10 +34,10 @@ module.exports = class TicketStore {
     return tickets
   }
   async _getOffset(key, value) {
-    return await this.redis.zRank(key, value)
+    return this.redis.zRank(key, value)
   }
   async _length(key) {
-    return await this.redis.zCard(key)
+    return this.redis.zCard(key)
   }
 
   async pushIntoWaiting(eventId, userId) {
@@ -72,16 +72,10 @@ module.exports = class TicketStore {
   }
 
   async getOffsetFromWaiting(eventId, userId) {
-    return await this.redis.zRank(
-      this.generateWaitingKey(eventId),
-      userId.toString(),
-    )
+    return this._getOffset(this.generateWaitingKey(eventId), userId.toString())
   }
   async getOffsetFromRunning(eventId, userId) {
-    return await this.redis.zRank(
-      this.generateRunningKey(eventId),
-      userId.toString(),
-    )
+    return this._getOffset(this.generateRunningKey(eventId), userId.toString())
   }
   async getLengthOfWaiting(eventId) {
     return await this._length(this.generateWaitingKey(eventId))
