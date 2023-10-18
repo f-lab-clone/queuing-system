@@ -19,7 +19,7 @@ describe('Ticket', () => {
       REDIS_PORT: container.getMappedPort(6379),
     }
 
-    server = require('../../src/api')
+    server = require('../../../src/api')
     redis = $require('loaders/redis')
     const TicketStoreService = $require('services/ticketStore')
     ticketStoreService = new TicketStoreService(redis)

@@ -16,7 +16,7 @@ describe('Health', () => {
       REDIS_PORT: container.getMappedPort(6379),
     }
 
-    server = require('../../src/api')
+    server = require('../../../src/api')
   })
   describe('GET / 는', () => {
     describe('성공시', () => {
