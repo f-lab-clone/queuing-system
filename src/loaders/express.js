@@ -9,7 +9,11 @@ const { sendResponse, CustomResponse } = $require('api/middlewares')
 module.exports = (app) => {
   app.use(helmet())
   app.use(cors())
-  app.use(morgan(config.NODE_ENV == 'production' ? 'combined' : 'dev'))
+  app.use(
+    morgan(config.NODE_ENV == 'production' ? 'combined' : 'dev', {
+      skip: () => config.NODE_ENV == 'test',
+    }),
+  )
 
   app.use(
     bodyParser.urlencoded({
