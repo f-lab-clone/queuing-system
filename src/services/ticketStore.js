@@ -10,17 +10,26 @@ module.exports = class TicketStore {
   }
 
   async push(eventId, userId) {
+    const score = getTimestamp()
     await this.redis.zAdd(generateWaitingKey(eventId), [
       {
-        score: getTimestamp(),
+        score,
         value: userId.toString(),
       },
     ])
 
-    logger.info(
-      `${eventId} totalCount: ${await this.redis.zCard(
-        generateWaitingKey(eventId),
-      )}`,
+    return {
+      eventId,
+      userId,
+      timestamp: score,
+      isWaiting: true,
+    }
+  }
+
+  async getOffset(eventId, uesrId) {
+    return await this.redis.zRank(
+      generateWaitingKey(eventId),
+      uesrId.toString(),
     )
   }
 }
