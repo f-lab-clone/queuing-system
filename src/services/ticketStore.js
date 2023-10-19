@@ -1,5 +1,3 @@
-const logger = $require('loaders/logger')
-
 const getTimestamp = () => new Date().valueOf()
 
 module.exports = class TicketStore {
@@ -7,11 +5,15 @@ module.exports = class TicketStore {
     this.redis = redis
   }
 
-  generateWaitingKey(eventId) {
+  getQueueKey() {
+    return 'queue'
+  }
+
+  getWaitingKeyByEventId(eventId) {
     return `waiting_${eventId}`
   }
 
-  generateRunningKey(eventId) {
+  getRunningKeyByEventId(eventId) {
     return `running_${eventId}`
   }
 
@@ -40,9 +42,12 @@ module.exports = class TicketStore {
     return this.redis.zCard(key)
   }
 
+  async updateQueue(eventId) {
+    await this._push(this.getQueueKey(), eventId.toString())
+  }
   async pushIntoWaiting(eventId, userId) {
     const result = await this._push(
-      this.generateWaitingKey(eventId),
+      this.getWaitingKeyByEventId(eventId),
       userId.toString(),
     )
     return {
@@ -54,7 +59,7 @@ module.exports = class TicketStore {
   }
   async pushIntoRunning(eventId, userId) {
     const result = await this._push(
-      this.generateRunningKey(eventId),
+      this.getRunningKeyByEventId(eventId),
       userId.toString(),
     )
     return {
@@ -65,22 +70,28 @@ module.exports = class TicketStore {
     }
   }
   async shiftFromWaiting(eventId, userId) {
-    return this._shift(this.generateWaitingKey(eventId), userId.toString())
+    return this._shift(this.getWaitingKeyByEventId(eventId), userId.toString())
   }
   async shiftFromRunning(eventId, userId) {
-    return this._shift(this.generateRunningKey(eventId), userId.toString())
+    return this._shift(this.getRunningKeyByEventId(eventId), userId.toString())
   }
 
   async getOffsetFromWaiting(eventId, userId) {
-    return this._getOffset(this.generateWaitingKey(eventId), userId.toString())
+    return this._getOffset(
+      this.getWaitingKeyByEventId(eventId),
+      userId.toString(),
+    )
   }
   async getOffsetFromRunning(eventId, userId) {
-    return this._getOffset(this.generateRunningKey(eventId), userId.toString())
+    return this._getOffset(
+      this.getRunningKeyByEventId(eventId),
+      userId.toString(),
+    )
   }
   async getLengthOfWaiting(eventId) {
-    return await this._length(this.generateWaitingKey(eventId))
+    return await this._length(this.getWaitingKeyByEventId(eventId))
   }
   async getLengthOfRunning(eventId) {
-    return await this._length(this.generateRunningKey(eventId))
+    return await this._length(this.getRunningKeyByEventId(eventId))
   }
 }

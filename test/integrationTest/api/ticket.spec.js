@@ -38,6 +38,20 @@ describe('Ticket', () => {
 
   describe('POST /ticket 은', () => {
     describe('성공시', () => {
+      it('전체 Queue를 관리하는 Sorted Set에 EventId를 추가한다', async () => {
+        for (let i = 1; i < 10; i++) {
+          await chai.request(server).post('/ticket').send({
+            eventId: i,
+            userId: 1,
+          })
+          const res = await redis.zRank(
+            ticketStoreService.getQueueKey(),
+            i.toString(),
+          )
+          expect(res).to.deep.equal(i - 1)
+        }
+      })
+
       it('201을 리턴한다', async () => {
         const res = await chai.request(server).post('/ticket').send({
           eventId: 1,

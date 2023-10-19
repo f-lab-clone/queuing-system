@@ -18,11 +18,14 @@ module.exports = (app) => {
       const { eventId, userId } = req.body
 
       const ticketStoreService = new TicketStoreService(redis)
+
+      await ticketStoreService.updateQueue(eventId)
       const result = await ticketStoreService.pushIntoWaiting(eventId, userId)
       result.offset = await ticketStoreService.getOffsetFromWaiting(
         eventId,
         userId,
       )
+
       return CustomResponse(201, `Created!`, result)
     }),
   )
