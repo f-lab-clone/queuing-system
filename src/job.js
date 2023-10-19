@@ -7,8 +7,6 @@ async function start() {
   Logger.info(`
     🛡️  Job Started 🛡️
   `)
-
-  module.exports = app
 }
 
 start()

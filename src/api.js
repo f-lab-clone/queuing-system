@@ -1,11 +1,15 @@
 const config = require('./config')
 const express = require('express')
 const Logger = $require('loaders/logger')
+const expressLoader = require('./loaders/express')
 
 function startServer() {
   const app = express()
 
   $require('loaders')(app)
+
+  expressLoader(app)
+  Logger.info('Express loaded')
 
   app.listen(config.port, (err) => {
     if (err) {
