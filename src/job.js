@@ -1,12 +1,32 @@
 const config = require('./config')
-const Logger = $require('loaders/logger')
+const logger = $require('loaders/logger')
+
+const redis = $require('loaders/redis')
+const TicketStoreService = $require('services/ticketStore')
+const JobSercice = $require('services/jobService')
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 async function start() {
   await $require('loaders')()
 
-  Logger.info(`
-    🛡️  Job Started 🛡️
+  const ticketStoreService = new TicketStoreService(redis)
+  const jobSerivce = new JobSercice(redis)
+
+  logger.info(`
+    🛡️ Job Started 🛡️
   `)
+
+  while (1) {
+    try {
+      logger.info(`🛡️ Job Running 🛡️`)
+    } catch (e) {
+      logger.error(`🛡️ Job Error Occured 🛡️`)
+      logger.error(err)
+    } finally {
+      await sleep(config.job.inteval)
+    }
+  }
 }
 
 start()

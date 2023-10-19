@@ -1,3 +1,5 @@
+jest.setTimeout(30000)
+
 const redis = require('redis')
 const { GenericContainer } = require('testcontainers')
 
@@ -15,11 +17,6 @@ describe('Redis', () => {
     )}`
     redisClient = redis.createClient({ url: URL })
     await redisClient.connect()
-  })
-
-  afterAll(async () => {
-    await redisClient.quit()
-    await container.stop()
   })
 
   it('works', async () => {

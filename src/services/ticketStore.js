@@ -42,8 +42,12 @@ module.exports = class TicketStore {
     return this.redis.zCard(key)
   }
 
+  async getTotalEvent() {
+    return this.redis.zRangeWithScores(this.getQueueKey(), 0, -1)
+  }
+
   async updateQueue(eventId) {
-    await this._push(this.getQueueKey(), eventId.toString())
+    return await this._push(this.getQueueKey(), eventId.toString())
   }
   async pushIntoWaiting(eventId, userId) {
     const result = await this._push(

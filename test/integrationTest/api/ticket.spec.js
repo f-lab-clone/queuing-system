@@ -1,3 +1,5 @@
+jest.setTimeout(30000)
+
 const chai = require('chai')
 const chaiHttp = require('chai-http')
 const { GenericContainer } = require('testcontainers')
