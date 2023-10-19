@@ -17,6 +17,11 @@ module.exports = {
     port: process.env.REDIS_PORT,
   },
 
+  job: {
+    inteval: process.env.JOB_INTEVAL,
+    movePerInvetal: process.env.JOB_MOVE_PER_INTEVAL,
+  },
+
   logs: {
     level: process.env.LOG_LEVEL || 'silly',
   },

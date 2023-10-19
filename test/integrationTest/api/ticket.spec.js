@@ -40,6 +40,7 @@ describe('Ticket', () => {
   beforeEach(async () => {
     await redis.flushAll()
   })
+
   describe('POST /ticket 은', () => {
     describe('성공시', () => {
       it('전체 Queue를 관리하는 Sorted Set에 EventId를 추가한다', async () => {
@@ -119,21 +120,13 @@ describe('Ticket', () => {
       })
 
       it('Running Queue Ticket은 IsWaiting = True를 반환한다.', async () => {
-        for (let testUserId = 1; testUserId < 10; testUserId++) {
-          await chai.request(server).post('/ticket').send({
-            eventId: testEventId,
-            userId: testUserId,
-          })
-        }
-
-        const FIVE_PEOPLE = 5
-        await queueMovingJob(testEventId, FIVE_PEOPLE)
-
-        const res1 = await chai.request(server).get(`/ticket/${testEventId}/1`)
+        await ticketStoreService.pushIntoRunning(1, 100)
+        await ticketStoreService.pushIntoWaiting(2, 100)
+        const res1 = await chai.request(server).get(`/ticket/1/100`)
         expect(res1.body.data.isWaiting).to.deep.equal(false)
         expect(res1.body.data.offset).to.deep.equal(0)
 
-        const res2 = await chai.request(server).get(`/ticket/${testEventId}/6`)
+        const res2 = await chai.request(server).get(`/ticket/2/100`)
         expect(res2.body.data.isWaiting).to.deep.equal(true)
         expect(res2.body.data.offset).to.deep.equal(0)
       })

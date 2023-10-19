@@ -17,18 +17,18 @@ module.exports = class TicketStore {
     return `running_${eventId}`
   }
 
-  async _push(key, value) {
-    const score = getTimestamp()
-    await this.redis.zAdd(key, [
-      {
-        score,
-        value,
-      },
-    ])
+  async _push(key, values) {
+    const data = values.reduce((acc, value) => {
+      acc.push({
+        score: getTimestamp(),
+        value: value.toString(),
+      })
+      return acc
+    }, [])
 
-    return {
-      timestamp: score,
-    }
+    await this.redis.zAdd(key, data)
+
+    return data.map((e) => ({ timestamp: e.score, eventId: Number(e.value) }))
   }
   async _shift(key, count) {
     const tickets = await this.redis.zRangeWithScores(key, 0, count - 1)
@@ -47,27 +47,24 @@ module.exports = class TicketStore {
   }
 
   async updateQueue(eventId) {
-    return await this._push(this.getQueueKey(), eventId.toString())
+    const results = await this._push(this.getQueueKey(), [eventId])
+    return results[0]
   }
   async pushIntoWaiting(eventId, userId) {
-    const result = await this._push(
-      this.getWaitingKeyByEventId(eventId),
-      userId.toString(),
-    )
+    const data = userId instanceof Array ? userId : [userId]
+    const results = await this._push(this.getWaitingKeyByEventId(eventId), data)
     return {
-      ...result,
+      timestamp: results[0].timestamp,
       isWaiting: true,
       eventId,
       userId,
     }
   }
   async pushIntoRunning(eventId, userId) {
-    const result = await this._push(
-      this.getRunningKeyByEventId(eventId),
-      userId.toString(),
-    )
+    const data = userId instanceof Array ? userId : [userId]
+    const results = await this._push(this.getRunningKeyByEventId(eventId), data)
     return {
-      ...result,
+      timestamp: results[0].timestamp,
       isWaiting: false,
       eventId,
       userId,

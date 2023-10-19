@@ -19,15 +19,17 @@ describe('Ticket', () => {
       NODE_ENV: 'test',
       REDIS_HOST: container.getHost(),
       REDIS_PORT: container.getMappedPort(6379),
+      JOB_INTEVAL: 1000,
+      JOB_MOVE_PER_INTEVAL: 2,
     }
 
-    require('../../../src/config')
+    const config = require('../../../src/config')
     await $require('loaders')()
     redis = $require('loaders/redis')
     const TicketStoreService = $require('services/ticketStore')
     const JobService = $require('services/jobService')
     ticketStoreService = new TicketStoreService(redis)
-    jobService = new JobService(ticketStoreService)
+    jobService = new JobService(ticketStoreService, config.job.movePerInvetal)
   })
 
   beforeEach(async () => {
@@ -43,6 +45,20 @@ describe('Ticket', () => {
       const { timestamp } = await ticketStoreService.updateQueue(1)
       const result = await jobService.getTotalEvent()
       expect(result).to.deep.equal([{ event_id: 1, timestamp }])
+    })
+  })
+
+  describe('Job.moveEventToRunning', () => {
+    it('should move event from waiting to running', async () => {
+      const eventId = 1
+      await ticketStoreService.pushIntoWaiting(eventId, 1)
+      await ticketStoreService.pushIntoWaiting(eventId, 2)
+      await ticketStoreService.pushIntoWaiting(eventId, 3)
+
+      await jobService.moveEventToRunning(eventId)
+
+      expect(await ticketStoreService.getLengthOfWaiting(eventId)).to.equal(1)
+      expect(await ticketStoreService.getLengthOfRunning(eventId)).to.equal(2)
     })
   })
 })
