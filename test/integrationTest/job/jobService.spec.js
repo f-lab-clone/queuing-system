@@ -19,9 +19,9 @@ describe('Ticket', () => {
       NODE_ENV: 'test',
       REDIS_HOST: container.getHost(),
       REDIS_PORT: container.getMappedPort(6379),
-      JOB_INTEVAL: 1000,
+      JOB_INTEVAL_SEC: 60,
       JOB_MOVE_PER_INTEVAL: 2,
-      JOB_TICKET_EXPIRED_MINUTE: 3,
+      JOB_TICKET_EXPIRED_SEC: 180,
     }
 
     const config = require('../../../src/config')

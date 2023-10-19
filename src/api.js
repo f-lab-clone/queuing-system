@@ -17,7 +17,10 @@ function startServer() {
       process.exit(1)
     }
     Logger.info(`
+      ----------------------------------------------
       🛡️  Server listening on port: ${config.port} 🛡️
+          NODE_ENV: ${config.NODE_ENV}
+      ----------------------------------------------
     `)
   })
 

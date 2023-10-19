@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start:api": "node src/api.js",
+    "start:job": "node src/job.js",
     "test": "jest"
   },
   "keywords": [],

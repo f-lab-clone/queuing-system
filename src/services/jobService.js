@@ -1,15 +1,12 @@
-const ONE_MINUTE = 1000 * 60
-
 module.exports = class TicketStore {
-  constructor(ticketStoreService, { movePerInvetal, expiredMinute }) {
+  constructor(ticketStoreService, { movePerInvetal, expiredSec }) {
     if (movePerInvetal < 1)
       throw new Error('movePerInvetal must be greater than 0')
-    if (expiredMinute < 1)
-      throw new Error('expiredMinute must be greater than 0')
+    if (expiredSec < 1) throw new Error('expiredSec must be greater than 0')
 
     this.ticketStoreService = ticketStoreService
     this.movePerInvetal = movePerInvetal
-    this.expiredMinute = expiredMinute
+    this.expiredSec = expiredSec
   }
 
   async getEventList() {
@@ -32,7 +29,7 @@ module.exports = class TicketStore {
   }
 
   async removeExpiredTicket(eventId) {
-    const expriedTime = new Date().valueOf() - ONE_MINUTE * this.expiredMinute
+    const expriedTime = new Date().valueOf() - 1000 * this.expiredSec
     await this.ticketStoreService.removeWaitingByTimestamp(
       eventId,
       0,
@@ -46,8 +43,7 @@ module.exports = class TicketStore {
   }
 
   async removeExpiredQueue() {
-    const expriedTime =
-      new Date().valueOf() - ONE_MINUTE * this.expiredMinute * 3
+    const expriedTime = new Date().valueOf() - 1000 * this.expiredSec * 3
 
     const events = await this.ticketStoreService.getEventIdByTimestamp(
       0,
