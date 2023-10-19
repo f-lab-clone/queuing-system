@@ -44,6 +44,9 @@ module.exports = class TicketStore {
   async _removeByScore(key, minScore, maxScore) {
     return this.redis.zRemRangeByScore(key, minScore, maxScore)
   }
+  async _getByScore(key, minScore, maxScore) {
+    return this.redis.zRangeByScore(key, minScore, maxScore)
+  }
 
   async getTotalEvent() {
     return this.redis.zRangeWithScores(this.getQueueKey(), 0, -1)
@@ -80,6 +83,9 @@ module.exports = class TicketStore {
     return this._shift(this.getRunningKeyByEventId(eventId), userId.toString())
   }
 
+  async getOffsetFromEventQueue(eventId) {
+    return this._getOffset(this.getQueueKey(), eventId.toString())
+  }
   async getOffsetFromWaiting(eventId, userId) {
     return this._getOffset(
       this.getWaitingKeyByEventId(eventId),
@@ -112,5 +118,23 @@ module.exports = class TicketStore {
       minScore,
       maxScore,
     )
+  }
+  async removeAllOfWaiting(eventId) {
+    return this.redis.del(this.getWaitingKeyByEventId(eventId))
+  }
+  async removeAllOfRunning(eventId) {
+    return this.redis.del(this.getRunningKeyByEventId(eventId))
+  }
+  async removeEventIdByScore(minScore, maxScore) {
+    return this._removeByScore(this.getQueueKey(), minScore, maxScore)
+  }
+
+  async getEventIdFromQueue(minScore, maxScore) {
+    const results = await this._getByScore(
+      this.getQueueKey(),
+      minScore,
+      maxScore,
+    )
+    return results.map((e) => Number(e))
   }
 }

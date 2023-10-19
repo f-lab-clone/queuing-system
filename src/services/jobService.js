@@ -32,8 +32,24 @@ module.exports = class TicketStore {
   }
 
   async removeExpiredTicket(eventId) {
-    const time3mAgo = new Date().valueOf() - ONE_MINUTE * this.expiredMinute
-    await this.ticketStoreService.removeWaitingByScore(eventId, 0, time3mAgo)
-    await this.ticketStoreService.removeRunningByScore(eventId, 0, time3mAgo)
+    const expriedTime = new Date().valueOf() - ONE_MINUTE * this.expiredMinute
+    await this.ticketStoreService.removeWaitingByScore(eventId, 0, expriedTime)
+    await this.ticketStoreService.removeRunningByScore(eventId, 0, expriedTime)
+  }
+
+  async removeExpiredQueue() {
+    const expriedTime =
+      new Date().valueOf() - ONE_MINUTE * this.expiredMinute * 3
+
+    const events = await this.ticketStoreService.getEventIdFromQueue(
+      0,
+      expriedTime,
+    )
+
+    for (const eventId of events) {
+      await this.ticketStoreService.removeAllOfWaiting(eventId)
+      await this.ticketStoreService.removeAllOfRunning(eventId)
+    }
+    await this.ticketStoreService.removeEventIdByScore(0, expriedTime)
   }
 }

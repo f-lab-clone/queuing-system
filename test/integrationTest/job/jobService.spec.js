@@ -1,10 +1,10 @@
 jest.setTimeout(30000)
+const { GenericContainer } = require('testcontainers')
 
 const chai = require('chai')
-const chaiHttp = require('chai-http')
-const { GenericContainer } = require('testcontainers')
 const expect = chai.expect
-chai.use(chaiHttp)
+
+const ONE_MINUTE = 1000 * 60
 
 describe('Ticket', () => {
   let redis = null
@@ -66,7 +66,6 @@ describe('Ticket', () => {
   describe('Job.removeExpiredTicket', () => {
     it('should remove expired ticket', async () => {
       const eventId = 100
-      const ONE_MINUTE = 1000 * 60
 
       await redis.zAdd(ticketStoreService.getWaitingKeyByEventId(eventId), [
         { value: `1`, score: new Date().valueOf() - ONE_MINUTE * 4 },
@@ -74,12 +73,55 @@ describe('Ticket', () => {
         { value: `3`, score: new Date().valueOf() - ONE_MINUTE * 1 },
       ])
       await redis.zAdd(ticketStoreService.getRunningKeyByEventId(eventId), [
-        { value: `1`, score: new Date().valueOf() - ONE_MINUTE * 4 },
-        { value: `2`, score: new Date().valueOf() - ONE_MINUTE * 4 },
+        { value: `4`, score: new Date().valueOf() - ONE_MINUTE * 4 },
+        { value: `5`, score: new Date().valueOf() - ONE_MINUTE * 4 },
       ])
 
       await jobService.removeExpiredTicket(eventId)
       expect(await ticketStoreService.getLengthOfWaiting(eventId)).to.equal(1)
+      expect(await ticketStoreService.getLengthOfRunning(eventId)).to.equal(0)
+    })
+  })
+
+  describe('Job.removeExpiredQueue', () => {
+    const eventId = 1001
+    async function setup1hoursAgo() {
+      await ticketStoreService.updateQueue(eventId)
+      const ONE_HOUR_AGO = new Date().valueOf() - ONE_MINUTE * 60
+
+      await redis.zAdd(ticketStoreService.getQueueKey(), [
+        { value: eventId.toString(), score: ONE_HOUR_AGO },
+      ])
+      await redis.zAdd(ticketStoreService.getWaitingKeyByEventId(eventId), [
+        { value: `1`, score: ONE_HOUR_AGO },
+        { value: `2`, score: ONE_HOUR_AGO },
+        { value: `3`, score: new Date().valueOf() - ONE_MINUTE * 1 },
+      ])
+      await redis.zAdd(ticketStoreService.getRunningKeyByEventId(eventId), [
+        { value: `4`, score: ONE_HOUR_AGO },
+        { value: `5`, score: ONE_HOUR_AGO },
+      ])
+    }
+    it('should remove expired queue', async () => {
+      await setup1hoursAgo()
+      expect(
+        await ticketStoreService.getOffsetFromEventQueue(eventId),
+      ).to.equal(0)
+
+      await jobService.removeExpiredQueue()
+      expect(
+        await ticketStoreService.getOffsetFromEventQueue(eventId),
+      ).to.equal(null)
+    })
+    it('should remove all waiting/running items when remove expired queue', async () => {
+      await setup1hoursAgo()
+
+      expect(await ticketStoreService.getLengthOfWaiting(eventId)).to.equal(3)
+      expect(await ticketStoreService.getLengthOfRunning(eventId)).to.equal(2)
+
+      await jobService.removeExpiredQueue()
+
+      expect(await ticketStoreService.getLengthOfWaiting(eventId)).to.equal(0)
       expect(await ticketStoreService.getLengthOfRunning(eventId)).to.equal(0)
     })
   })

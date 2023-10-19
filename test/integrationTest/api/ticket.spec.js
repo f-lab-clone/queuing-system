@@ -6,6 +6,8 @@ const { GenericContainer } = require('testcontainers')
 const expect = chai.expect
 chai.use(chaiHttp)
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
 describe('Ticket', () => {
   let server = null
   let redis = null
@@ -55,6 +57,28 @@ describe('Ticket', () => {
           )
           expect(res).to.deep.equal(testEventId - 1)
         }
+      })
+      it('전체 Queue를 관리하는 Sorted Set에 항상 최신값이 갱신되어야 한다', async () => {
+        const isRange = (score) =>
+          score <= new Date().valueOf() + 100 &&
+          score >= new Date().valueOf() - 100
+
+        await chai.request(server).post('/ticket').send({
+          eventId: 1,
+          userId: 1,
+        })
+        const score1 = await redis.zScore(ticketStoreService.getQueueKey(), '1')
+
+        expect(isRange(score1)).to.deep.equal(true)
+        await sleep(2000)
+        expect(isRange(score1)).to.deep.equal(false)
+
+        await chai.request(server).post('/ticket').send({
+          eventId: 1,
+          userId: 1,
+        })
+        const score2 = await redis.zScore(ticketStoreService.getQueueKey(), '1')
+        expect(isRange(score2)).to.deep.equal(true)
       })
 
       it('201을 리턴한다', async () => {
