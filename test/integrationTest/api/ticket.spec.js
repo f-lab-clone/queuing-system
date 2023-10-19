@@ -52,7 +52,7 @@ describe('Ticket', () => {
             userId: testUserId,
           })
           const res = await redis.zRank(
-            ticketStoreService.getQueueKey(),
+            ticketStoreService.getEventListKey(),
             testEventId.toString(),
           )
           expect(res).to.deep.equal(testEventId - 1)
@@ -67,7 +67,10 @@ describe('Ticket', () => {
           eventId: 1,
           userId: 1,
         })
-        const score1 = await redis.zScore(ticketStoreService.getQueueKey(), '1')
+        const score1 = await redis.zScore(
+          ticketStoreService.getEventListKey(),
+          '1',
+        )
 
         expect(isRange(score1)).to.deep.equal(true)
         await sleep(2000)
@@ -77,7 +80,10 @@ describe('Ticket', () => {
           eventId: 1,
           userId: 1,
         })
-        const score2 = await redis.zScore(ticketStoreService.getQueueKey(), '1')
+        const score2 = await redis.zScore(
+          ticketStoreService.getEventListKey(),
+          '1',
+        )
         expect(isRange(score2)).to.deep.equal(true)
       })
 

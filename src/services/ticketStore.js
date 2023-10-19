@@ -5,8 +5,8 @@ module.exports = class TicketStore {
     this.redis = redis
   }
 
-  getQueueKey() {
-    return 'queue'
+  getEventListKey() {
+    return 'event_list'
   }
 
   getWaitingKeyByEventId(eventId) {
@@ -41,19 +41,19 @@ module.exports = class TicketStore {
   async _length(key) {
     return this.redis.zCard(key)
   }
-  async _removeByScore(key, minScore, maxScore) {
+  async _removeByTimestamp(key, minScore, maxScore) {
     return this.redis.zRemRangeByScore(key, minScore, maxScore)
   }
-  async _getByScore(key, minScore, maxScore) {
+  async _getByTimestamp(key, minScore, maxScore) {
     return this.redis.zRangeByScore(key, minScore, maxScore)
   }
 
-  async getTotalEvent() {
-    return this.redis.zRangeWithScores(this.getQueueKey(), 0, -1)
+  async getEventList() {
+    return this.redis.zRangeWithScores(this.getEventListKey(), 0, -1)
   }
 
-  async updateQueue(eventId) {
-    const results = await this._push(this.getQueueKey(), [eventId])
+  async updateEventInList(eventId) {
+    const results = await this._push(this.getEventListKey(), [eventId])
     return results[0]
   }
   async pushIntoWaiting(eventId, userId) {
@@ -83,8 +83,8 @@ module.exports = class TicketStore {
     return this._shift(this.getRunningKeyByEventId(eventId), userId.toString())
   }
 
-  async getOffsetFromEventQueue(eventId) {
-    return this._getOffset(this.getQueueKey(), eventId.toString())
+  async getOffsetFromEventList(eventId) {
+    return this._getOffset(this.getEventListKey(), eventId.toString())
   }
   async getOffsetFromWaiting(eventId, userId) {
     return this._getOffset(
@@ -105,18 +105,18 @@ module.exports = class TicketStore {
     return await this._length(this.getRunningKeyByEventId(eventId))
   }
 
-  async removeWaitingByScore(eventId, minScore, maxScore) {
-    return this._removeByScore(
+  async removeWaitingByTimestamp(eventId, minTimestamp, maxTimestamp) {
+    return this._removeByTimestamp(
       this.getWaitingKeyByEventId(eventId),
-      minScore,
-      maxScore,
+      minTimestamp,
+      maxTimestamp,
     )
   }
-  async removeRunningByScore(eventId, minScore, maxScore) {
-    return this._removeByScore(
+  async removeRunningByTimestamp(eventId, minTimestamp, maxTimestamp) {
+    return this._removeByTimestamp(
       this.getRunningKeyByEventId(eventId),
-      minScore,
-      maxScore,
+      minTimestamp,
+      maxTimestamp,
     )
   }
   async removeAllOfWaiting(eventId) {
@@ -125,15 +125,19 @@ module.exports = class TicketStore {
   async removeAllOfRunning(eventId) {
     return this.redis.del(this.getRunningKeyByEventId(eventId))
   }
-  async removeEventIdByScore(minScore, maxScore) {
-    return this._removeByScore(this.getQueueKey(), minScore, maxScore)
-  }
 
-  async getEventIdFromQueue(minScore, maxScore) {
-    const results = await this._getByScore(
-      this.getQueueKey(),
-      minScore,
-      maxScore,
+  async removeEventIdByTimestamp(minTimestamp, maxTimestamp) {
+    return this._removeByTimestamp(
+      this.getEventListKey(),
+      minTimestamp,
+      maxTimestamp,
+    )
+  }
+  async getEventIdByTimestamp(minTimestamp, maxTimestamp) {
+    const results = await this._getByTimestamp(
+      this.getEventListKey(),
+      minTimestamp,
+      maxTimestamp,
     )
     return results.map((e) => Number(e))
   }

@@ -37,14 +37,14 @@ describe('Ticket', () => {
     await redis.flushAll()
   })
 
-  describe('Job.getTotalEvent', () => {
+  describe('Job.getEventList', () => {
     it('should return [] when no event in queue', async () => {
-      const result = await jobService.getTotalEvent()
+      const result = await jobService.getEventList()
       expect(result).to.deep.equal([])
     })
     it('should return [{event_id, timestamp}] when no event in queue', async () => {
-      const { timestamp } = await ticketStoreService.updateQueue(1)
-      const result = await jobService.getTotalEvent()
+      const { timestamp } = await ticketStoreService.updateEventInList(1)
+      const result = await jobService.getEventList()
       expect(result).to.deep.equal([{ event_id: 1, timestamp }])
     })
   })
@@ -86,10 +86,10 @@ describe('Ticket', () => {
   describe('Job.removeExpiredQueue', () => {
     const eventId = 1001
     async function setup1hoursAgo() {
-      await ticketStoreService.updateQueue(eventId)
+      await ticketStoreService.updateEventInList(eventId)
       const ONE_HOUR_AGO = new Date().valueOf() - ONE_MINUTE * 60
 
-      await redis.zAdd(ticketStoreService.getQueueKey(), [
+      await redis.zAdd(ticketStoreService.getEventListKey(), [
         { value: eventId.toString(), score: ONE_HOUR_AGO },
       ])
       await redis.zAdd(ticketStoreService.getWaitingKeyByEventId(eventId), [
@@ -104,14 +104,14 @@ describe('Ticket', () => {
     }
     it('should remove expired queue', async () => {
       await setup1hoursAgo()
-      expect(
-        await ticketStoreService.getOffsetFromEventQueue(eventId),
-      ).to.equal(0)
+      expect(await ticketStoreService.getOffsetFromEventList(eventId)).to.equal(
+        0,
+      )
 
       await jobService.removeExpiredQueue()
-      expect(
-        await ticketStoreService.getOffsetFromEventQueue(eventId),
-      ).to.equal(null)
+      expect(await ticketStoreService.getOffsetFromEventList(eventId)).to.equal(
+        null,
+      )
     })
     it('should remove all waiting/running items when remove expired queue', async () => {
       await setup1hoursAgo()

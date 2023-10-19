@@ -19,7 +19,7 @@ module.exports = (app) => {
 
       const ticketStoreService = new TicketStoreService(redis)
 
-      await ticketStoreService.updateQueue(eventId)
+      await ticketStoreService.updateEventInList(eventId)
       const result = await ticketStoreService.pushIntoWaiting(eventId, userId)
       result.offset = await ticketStoreService.getOffsetFromWaiting(
         eventId,

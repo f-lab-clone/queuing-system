@@ -12,8 +12,8 @@ module.exports = class TicketStore {
     this.expiredMinute = expiredMinute
   }
 
-  async getTotalEvent() {
-    const results = await this.ticketStoreService.getTotalEvent()
+  async getEventList() {
+    const results = await this.ticketStoreService.getEventList()
     return results.map((e) => ({
       event_id: Number(e.value),
       timestamp: e.score,
@@ -33,15 +33,23 @@ module.exports = class TicketStore {
 
   async removeExpiredTicket(eventId) {
     const expriedTime = new Date().valueOf() - ONE_MINUTE * this.expiredMinute
-    await this.ticketStoreService.removeWaitingByScore(eventId, 0, expriedTime)
-    await this.ticketStoreService.removeRunningByScore(eventId, 0, expriedTime)
+    await this.ticketStoreService.removeWaitingByTimestamp(
+      eventId,
+      0,
+      expriedTime,
+    )
+    await this.ticketStoreService.removeRunningByTimestamp(
+      eventId,
+      0,
+      expriedTime,
+    )
   }
 
   async removeExpiredQueue() {
     const expriedTime =
       new Date().valueOf() - ONE_MINUTE * this.expiredMinute * 3
 
-    const events = await this.ticketStoreService.getEventIdFromQueue(
+    const events = await this.ticketStoreService.getEventIdByTimestamp(
       0,
       expriedTime,
     )
@@ -50,6 +58,6 @@ module.exports = class TicketStore {
       await this.ticketStoreService.removeAllOfWaiting(eventId)
       await this.ticketStoreService.removeAllOfRunning(eventId)
     }
-    await this.ticketStoreService.removeEventIdByScore(0, expriedTime)
+    await this.ticketStoreService.removeEventIdByTimestamp(0, expriedTime)
   }
 }
