@@ -25,7 +25,6 @@ module.exports = class TicketStore {
       })
       return acc
     }, [])
-
     await this.redis.zAdd(key, data)
 
     return data.map((e) => ({ timestamp: e.score, eventId: Number(e.value) }))
@@ -77,10 +76,14 @@ module.exports = class TicketStore {
     }
   }
   async shiftFromWaiting(eventId, userId) {
-    return this._shift(this.getWaitingKeyByEventId(eventId), userId.toString())
-  }
-  async shiftFromRunning(eventId, userId) {
-    return this._shift(this.getRunningKeyByEventId(eventId), userId.toString())
+    const results = await this._shift(
+      this.getWaitingKeyByEventId(eventId),
+      userId.toString(),
+    )
+    return results.map((e) => ({
+      timestamp: e.score,
+      eventId: Number(e.value),
+    }))
   }
 
   async getOffsetFromEventList(eventId) {

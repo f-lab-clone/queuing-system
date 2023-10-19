@@ -118,7 +118,7 @@ describe('Ticket', () => {
     })
   })
 
-  describe('GET /ticket/{event_id}/{user_id} 은', () => {
+  describe('GET /ticket/{eventId}/{userId} 은', () => {
     describe('성공시', () => {
       it('200을 리턴한다', async () => {
         await chai.request(server).post('/ticket').send({

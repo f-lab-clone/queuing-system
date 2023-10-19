@@ -42,21 +42,21 @@ describe('Ticket', () => {
       const result = await jobService.getEventList()
       expect(result).to.deep.equal([])
     })
-    it('should return [{event_id, timestamp}] when no event in queue', async () => {
+    it('should return [{eventId, timestamp}] when no event in queue', async () => {
       const { timestamp } = await ticketStoreService.updateEventInList(1)
       const result = await jobService.getEventList()
-      expect(result).to.deep.equal([{ event_id: 1, timestamp }])
+      expect(result).to.deep.equal([{ eventId: 1, timestamp }])
     })
   })
 
-  describe('Job.moveEventToRunning', () => {
+  describe('Job.moveEventInToRunning', () => {
     it('should move event from waiting to running', async () => {
       const eventId = 1
       await ticketStoreService.pushIntoWaiting(eventId, 1)
       await ticketStoreService.pushIntoWaiting(eventId, 2)
       await ticketStoreService.pushIntoWaiting(eventId, 3)
 
-      await jobService.moveEventToRunning(eventId)
+      await jobService.moveEventInToRunning(eventId)
 
       expect(await ticketStoreService.getLengthOfWaiting(eventId)).to.equal(1)
       expect(await ticketStoreService.getLengthOfRunning(eventId)).to.equal(2)
@@ -83,7 +83,7 @@ describe('Ticket', () => {
     })
   })
 
-  describe('Job.removeExpiredQueue', () => {
+  describe('Job.removeExpiredEvent', () => {
     const eventId = 1001
     async function setup1hoursAgo() {
       await ticketStoreService.updateEventInList(eventId)
@@ -108,7 +108,7 @@ describe('Ticket', () => {
         0,
       )
 
-      await jobService.removeExpiredQueue()
+      await jobService.removeExpiredEvent()
       expect(await ticketStoreService.getOffsetFromEventList(eventId)).to.equal(
         null,
       )
@@ -119,7 +119,7 @@ describe('Ticket', () => {
       expect(await ticketStoreService.getLengthOfWaiting(eventId)).to.equal(3)
       expect(await ticketStoreService.getLengthOfRunning(eventId)).to.equal(2)
 
-      await jobService.removeExpiredQueue()
+      await jobService.removeExpiredEvent()
 
       expect(await ticketStoreService.getLengthOfWaiting(eventId)).to.equal(0)
       expect(await ticketStoreService.getLengthOfRunning(eventId)).to.equal(0)

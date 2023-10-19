@@ -1,3 +1,5 @@
+const logger = $require('loaders/logger')
+
 module.exports = class TicketStore {
   constructor(ticketStoreService, { movePerInvetal, expiredSec }) {
     if (movePerInvetal < 1)
@@ -12,43 +14,58 @@ module.exports = class TicketStore {
   async getEventList() {
     const results = await this.ticketStoreService.getEventList()
     return results.map((e) => ({
-      event_id: Number(e.value),
+      eventId: Number(e.value),
       timestamp: e.score,
     }))
   }
 
-  async moveEventToRunning(eventId) {
+  async moveEventInToRunning(eventId) {
     const tickets = await this.ticketStoreService.shiftFromWaiting(
       eventId,
       this.movePerInvetal,
     )
+    logger.info(
+      `move Event InTo Running eventId: ${eventId} ${JSON.stringify(
+        tickets.map((e) => e.eventId),
+      )}`,
+    )
+    if (tickets.length === 0) return
+
     await this.ticketStoreService.pushIntoRunning(
       eventId,
-      tickets.map((e) => e.value),
+      tickets.map((e) => e.eventId),
     )
   }
 
   async removeExpiredTicket(eventId) {
     const expriedTime = new Date().valueOf() - 1000 * this.expiredSec
-    await this.ticketStoreService.removeWaitingByTimestamp(
-      eventId,
-      0,
-      expriedTime,
-    )
-    await this.ticketStoreService.removeRunningByTimestamp(
-      eventId,
-      0,
-      expriedTime,
+    const waiting_count =
+      await this.ticketStoreService.removeWaitingByTimestamp(
+        eventId,
+        0,
+        expriedTime,
+      )
+    const running_count =
+      await this.ticketStoreService.removeRunningByTimestamp(
+        eventId,
+        0,
+        expriedTime,
+      )
+
+    logger.info(
+      `remove Expired Ticket eventId: ${eventId} (Waitting = ${waiting_count}, Running = ${running_count})`,
     )
   }
 
-  async removeExpiredQueue() {
+  async removeExpiredEvent() {
     const expriedTime = new Date().valueOf() - 1000 * this.expiredSec * 3
 
     const events = await this.ticketStoreService.getEventIdByTimestamp(
       0,
       expriedTime,
     )
+
+    logger.info(`remove Expired Event: ${JSON.stringify(events)}`)
 
     for (const eventId of events) {
       await this.ticketStoreService.removeAllOfWaiting(eventId)

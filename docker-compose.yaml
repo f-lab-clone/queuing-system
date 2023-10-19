@@ -50,9 +50,9 @@ services:
       NODE_ENV: development
       REDIS_HOST: redis_server
       REDIS_PORT: 6379
-      JOB_INTEVAL_SEC: 60
-      JOB_MOVE_PER_INTEVAL: 3
-      JOB_TICKET_EXPIRED_SEC: 180
+      JOB_INTEVAL_SEC: 15
+      JOB_MOVE_PER_INTEVAL: 2
+      JOB_TICKET_EXPIRED_SEC: 30
 
     command: npm run start:job
 
