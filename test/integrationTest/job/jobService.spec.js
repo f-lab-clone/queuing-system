@@ -21,6 +21,7 @@ describe('Ticket', () => {
       REDIS_PORT: container.getMappedPort(6379),
       JOB_INTEVAL: 1000,
       JOB_MOVE_PER_INTEVAL: 2,
+      JOB_TICKET_EXPIRED_MINUTE: 3,
     }
 
     const config = require('../../../src/config')
@@ -29,7 +30,7 @@ describe('Ticket', () => {
     const TicketStoreService = $require('services/ticketStore')
     const JobService = $require('services/jobService')
     ticketStoreService = new TicketStoreService(redis)
-    jobService = new JobService(ticketStoreService, config.job.movePerInvetal)
+    jobService = new JobService(ticketStoreService, config.job)
   })
 
   beforeEach(async () => {
@@ -59,6 +60,27 @@ describe('Ticket', () => {
 
       expect(await ticketStoreService.getLengthOfWaiting(eventId)).to.equal(1)
       expect(await ticketStoreService.getLengthOfRunning(eventId)).to.equal(2)
+    })
+  })
+
+  describe('Job.removeExpiredTicket', () => {
+    it('should remove expired ticket', async () => {
+      const eventId = 100
+      const ONE_MINUTE = 1000 * 60
+
+      await redis.zAdd(ticketStoreService.getWaitingKeyByEventId(eventId), [
+        { value: `1`, score: new Date().valueOf() - ONE_MINUTE * 4 },
+        { value: `2`, score: new Date().valueOf() - ONE_MINUTE * 4 },
+        { value: `3`, score: new Date().valueOf() - ONE_MINUTE * 1 },
+      ])
+      await redis.zAdd(ticketStoreService.getRunningKeyByEventId(eventId), [
+        { value: `1`, score: new Date().valueOf() - ONE_MINUTE * 4 },
+        { value: `2`, score: new Date().valueOf() - ONE_MINUTE * 4 },
+      ])
+
+      await jobService.removeExpiredTicket(eventId)
+      expect(await ticketStoreService.getLengthOfWaiting(eventId)).to.equal(1)
+      expect(await ticketStoreService.getLengthOfRunning(eventId)).to.equal(0)
     })
   })
 })

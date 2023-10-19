@@ -20,6 +20,7 @@ module.exports = {
   job: {
     inteval: process.env.JOB_INTEVAL,
     movePerInvetal: process.env.JOB_MOVE_PER_INTEVAL,
+    expiredMinute: process.env.JOB_TICKET_EXPIRED_MINUTE,
   },
 
   logs: {

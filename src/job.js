@@ -11,7 +11,7 @@ async function start() {
   await $require('loaders')()
 
   const ticketStoreService = new TicketStoreService(redis)
-  const jobSerivce = new JobSercice(redis)
+  const jobSerivce = new JobSercice(redis, config.job)
 
   logger.info(`
     🛡️ Job Started 🛡️

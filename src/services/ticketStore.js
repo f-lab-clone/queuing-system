@@ -41,6 +41,9 @@ module.exports = class TicketStore {
   async _length(key) {
     return this.redis.zCard(key)
   }
+  async _removeByScore(key, minScore, maxScore) {
+    return this.redis.zRemRangeByScore(key, minScore, maxScore)
+  }
 
   async getTotalEvent() {
     return this.redis.zRangeWithScores(this.getQueueKey(), 0, -1)
@@ -94,5 +97,20 @@ module.exports = class TicketStore {
   }
   async getLengthOfRunning(eventId) {
     return await this._length(this.getRunningKeyByEventId(eventId))
+  }
+
+  async removeWaitingByScore(eventId, minScore, maxScore) {
+    return this._removeByScore(
+      this.getWaitingKeyByEventId(eventId),
+      minScore,
+      maxScore,
+    )
+  }
+  async removeRunningByScore(eventId, minScore, maxScore) {
+    return this._removeByScore(
+      this.getRunningKeyByEventId(eventId),
+      minScore,
+      maxScore,
+    )
   }
 }
