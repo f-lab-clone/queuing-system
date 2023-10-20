@@ -11,18 +11,20 @@ function startServer() {
   expressLoader(app)
   Logger.info('Express loaded')
 
-  app.listen(config.port, (err) => {
-    if (err) {
-      Logger.error(err)
-      process.exit(1)
-    }
-    Logger.info(`
-      ----------------------------------------------
-      🛡️  Server listening on port: ${config.port} 🛡️
-          NODE_ENV: ${config.NODE_ENV}
-      ----------------------------------------------
-    `)
-  })
+  if (config.NODE_ENV !== 'test') {
+    app.listen(config.port, (err) => {
+      if (err) {
+        Logger.error(err)
+        process.exit(1)
+      }
+      Logger.info(`
+        ----------------------------------------------
+        🛡️  Server listening on port: ${config.port} 🛡️
+            NODE_ENV: ${config.NODE_ENV}
+        ----------------------------------------------
+      `)
+    })
+  }
 
   module.exports = app
 }

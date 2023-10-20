@@ -13,6 +13,7 @@ describe('Health', () => {
   beforeAll(async () => {
     container = await new GenericContainer('redis').withExposedPorts(6379).start()
     process.env = {
+      PORT: 3010,
       NODE_ENV: 'test',
       REDIS_HOST: container.getHost(),
       REDIS_PORT: container.getMappedPort(6379),
@@ -25,6 +26,7 @@ describe('Health', () => {
     await $require('loaders/redis').disconnect()
     await container.stop()
   })
+
   describe('GET / 는', () => {
     describe('성공시', () => {
       it('200 OK를 리턴한다', async () => {
