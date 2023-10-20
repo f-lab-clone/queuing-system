@@ -42,11 +42,6 @@ describe('Ticket', () => {
     await redis.flushAll()
   })
 
-  afterAll(async () => {
-    await redis.disconnect()
-    await container.stop()
-  })
-
   describe('Job.getEventList', () => {
     it('should return [] when no event in queue', async () => {
       const result = await jobService.getEventList()
