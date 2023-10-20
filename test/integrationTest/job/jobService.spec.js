@@ -11,10 +11,14 @@ describe('Ticket', () => {
   let ticketStoreService = null
   let jobService = null
 
+  const testEventId = 1
+
+  function addUserIntoQueue(key, userId, timestamp) {
+    return redis.zAdd(key, [{ value: userId.toString(), score: timestamp }])
+  }
+
   beforeAll(async () => {
-    container = await new GenericContainer('redis')
-      .withExposedPorts(6379)
-      .start()
+    container = await new GenericContainer('redis').withExposedPorts(6379).start()
     process.env = {
       NODE_ENV: 'test',
       REDIS_HOST: container.getHost(),
@@ -45,84 +49,78 @@ describe('Ticket', () => {
     it('should return [{eventId, timestamp}] when no event in queue', async () => {
       const { timestamp } = await ticketStoreService.updateEventInList(1)
       const result = await jobService.getEventList()
-      expect(result).to.deep.equal([{ eventId: 1, timestamp }])
+      expect(result).to.deep.equal([{ eventId: testEventId, timestamp }])
     })
   })
 
   describe('Job.moveEventInToRunning', () => {
     it('should move event from waiting to running', async () => {
-      const eventId = 1
-      await ticketStoreService.pushIntoWaiting(eventId, 1)
-      await ticketStoreService.pushIntoWaiting(eventId, 2)
-      await ticketStoreService.pushIntoWaiting(eventId, 3)
+      await ticketStoreService.pushIntoWaiting(testEventId, 1)
+      await ticketStoreService.pushIntoWaiting(testEventId, 2)
+      await ticketStoreService.pushIntoWaiting(testEventId, 3)
 
-      await jobService.moveEventInToRunning(eventId)
+      // MOVE_PER_INTEVAL = 2
+      await jobService.moveEventInToRunning(testEventId)
 
-      expect(await ticketStoreService.getLengthOfWaiting(eventId)).to.equal(1)
-      expect(await ticketStoreService.getLengthOfRunning(eventId)).to.equal(2)
+      expect(await ticketStoreService.getLengthOfWaiting(testEventId)).to.equal(1)
+      expect(await ticketStoreService.getLengthOfRunning(testEventId)).to.equal(2)
     })
   })
 
   describe('Job.removeExpiredTicket', () => {
     it('should remove expired ticket', async () => {
-      const eventId = 100
+      const NOW = new Date().valueOf()
+      const WAITING = ticketStoreService.getWaitingKeyByEventId(testEventId)
+      await addUserIntoQueue(WAITING, 1, NOW - ONE_MINUTE * 4)
+      await addUserIntoQueue(WAITING, 2, NOW - ONE_MINUTE * 4)
+      await addUserIntoQueue(WAITING, 3, NOW)
 
-      await redis.zAdd(ticketStoreService.getWaitingKeyByEventId(eventId), [
-        { value: `1`, score: new Date().valueOf() - ONE_MINUTE * 4 },
-        { value: `2`, score: new Date().valueOf() - ONE_MINUTE * 4 },
-        { value: `3`, score: new Date().valueOf() - ONE_MINUTE * 1 },
-      ])
-      await redis.zAdd(ticketStoreService.getRunningKeyByEventId(eventId), [
-        { value: `4`, score: new Date().valueOf() - ONE_MINUTE * 4 },
-        { value: `5`, score: new Date().valueOf() - ONE_MINUTE * 4 },
-      ])
+      const RUNNING = ticketStoreService.getRunningKeyByEventId(testEventId)
+      await addUserIntoQueue(RUNNING, 4, NOW - ONE_MINUTE * 4)
+      await addUserIntoQueue(RUNNING, 5, NOW - ONE_MINUTE * 4)
 
-      await jobService.removeExpiredTicket(eventId)
-      expect(await ticketStoreService.getLengthOfWaiting(eventId)).to.equal(1)
-      expect(await ticketStoreService.getLengthOfRunning(eventId)).to.equal(0)
+      await jobService.removeExpiredTicket(testEventId)
+      expect(await ticketStoreService.getLengthOfWaiting(testEventId)).to.equal(1)
+      expect(await ticketStoreService.getLengthOfRunning(testEventId)).to.equal(0)
     })
   })
 
   describe('Job.removeExpiredEvent', () => {
-    const eventId = 1001
     async function setup1hoursAgo() {
-      await ticketStoreService.updateEventInList(eventId)
-      const ONE_HOUR_AGO = new Date().valueOf() - ONE_MINUTE * 60
+      await ticketStoreService.updateEventInList(testEventId)
+      const NOW = new Date().valueOf()
+      const ONE_HOUR_AGO = NOW - ONE_MINUTE * 60
 
-      await redis.zAdd(ticketStoreService.getEventListKey(), [
-        { value: eventId.toString(), score: ONE_HOUR_AGO },
-      ])
-      await redis.zAdd(ticketStoreService.getWaitingKeyByEventId(eventId), [
-        { value: `1`, score: ONE_HOUR_AGO },
-        { value: `2`, score: ONE_HOUR_AGO },
-        { value: `3`, score: new Date().valueOf() - ONE_MINUTE * 1 },
-      ])
-      await redis.zAdd(ticketStoreService.getRunningKeyByEventId(eventId), [
-        { value: `4`, score: ONE_HOUR_AGO },
-        { value: `5`, score: ONE_HOUR_AGO },
-      ])
+      await redis.zAdd(ticketStoreService.getEventListKey(), [{ value: testEventId.toString(), score: ONE_HOUR_AGO }])
+
+      const WAITING = ticketStoreService.getWaitingKeyByEventId(testEventId)
+      await addUserIntoQueue(WAITING, 1, ONE_HOUR_AGO)
+      await addUserIntoQueue(WAITING, 2, ONE_HOUR_AGO)
+      await addUserIntoQueue(WAITING, 3, ONE_HOUR_AGO)
+
+      const RUNNING = ticketStoreService.getRunningKeyByEventId(testEventId)
+      await addUserIntoQueue(RUNNING, 4, ONE_HOUR_AGO)
+      await addUserIntoQueue(RUNNING, 5, ONE_HOUR_AGO)
     }
+
     it('should remove expired queue', async () => {
       await setup1hoursAgo()
-      expect(await ticketStoreService.getOffsetFromEventList(eventId)).to.equal(
-        0,
-      )
+      expect(await ticketStoreService.getOffsetFromEventList(testEventId)).to.equal(0)
 
       await jobService.removeExpiredEvent()
-      expect(await ticketStoreService.getOffsetFromEventList(eventId)).to.equal(
-        null,
-      )
+      expect(await ticketStoreService.getOffsetFromEventList(testEventId)).to.equal(null)
     })
+
     it('should remove all waiting/running items when remove expired queue', async () => {
       await setup1hoursAgo()
 
-      expect(await ticketStoreService.getLengthOfWaiting(eventId)).to.equal(3)
-      expect(await ticketStoreService.getLengthOfRunning(eventId)).to.equal(2)
+      expect(await ticketStoreService.getLengthOfWaiting(testEventId)).to.equal(3)
+      expect(await ticketStoreService.getLengthOfRunning(testEventId)).to.equal(2)
 
       await jobService.removeExpiredEvent()
 
-      expect(await ticketStoreService.getLengthOfWaiting(eventId)).to.equal(0)
-      expect(await ticketStoreService.getLengthOfRunning(eventId)).to.equal(0)
+      expect(await ticketStoreService.getLengthOfWaiting(testEventId)).to.equal(0)
+      expect(await ticketStoreService.getLengthOfRunning(testEventId)).to.equal(0)
     })
   })
 })
