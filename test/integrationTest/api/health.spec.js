@@ -21,6 +21,10 @@ describe('Health', () => {
     server = require('../../../src/api')
   })
 
+  afterAll(async () => {
+    await $require('loaders/redis').disconnect()
+    await container.stop()
+  })
   describe('GET / 는', () => {
     describe('성공시', () => {
       it('200 OK를 리턴한다', async () => {

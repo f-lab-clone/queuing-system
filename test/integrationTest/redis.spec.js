@@ -15,6 +15,11 @@ describe('Redis', () => {
     await redisClient.connect()
   })
 
+  afterAll(async () => {
+    await redisClient.disconnect()
+    await container.stop()
+  })
+
   it('works', async () => {
     await redisClient.set('key', 'val')
     expect(await redisClient.get('key')).toBe('val')

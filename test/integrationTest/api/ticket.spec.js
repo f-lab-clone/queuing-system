@@ -42,6 +42,11 @@ describe('Ticket', () => {
     await redis.flushAll()
   })
 
+  afterAll(async () => {
+    await redis.disconnect()
+    await container.stop()
+  })
+
   describe('POST /ticket 은', () => {
     describe('성공시', () => {
       it('전체 Queue를 관리하는 Sorted Set에 EventId를 추가한다', async () => {
