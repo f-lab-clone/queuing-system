@@ -8,13 +8,9 @@ describe('Redis', () => {
   let redisClient
 
   beforeAll(async () => {
-    container = await new GenericContainer('redis')
-      .withExposedPorts(6379)
-      .start()
+    container = await new GenericContainer('redis').withExposedPorts(6379).start()
 
-    const URL = `redis://${container.getHost()}:${container.getMappedPort(
-      6379,
-    )}`
+    const URL = `redis://${container.getHost()}:${container.getMappedPort(6379)}`
     redisClient = redis.createClient({ url: URL })
     await redisClient.connect()
   })

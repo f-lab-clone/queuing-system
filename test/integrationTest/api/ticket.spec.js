@@ -9,6 +9,7 @@ chai.use(chaiHttp)
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 describe('Ticket', () => {
+  let container = null
   let server = null
   let redis = null
   let ticketStoreService = null
@@ -24,9 +25,7 @@ describe('Ticket', () => {
   }
 
   beforeAll(async () => {
-    container = await new GenericContainer('redis')
-      .withExposedPorts(6379)
-      .start()
+    container = await new GenericContainer('redis').withExposedPorts(6379).start()
     process.env = {
       NODE_ENV: 'test',
       REDIS_HOST: container.getHost(),
@@ -51,26 +50,18 @@ describe('Ticket', () => {
             eventId: testEventId,
             userId: testUserId,
           })
-          const res = await redis.zRank(
-            ticketStoreService.getEventListKey(),
-            testEventId.toString(),
-          )
+          const res = await redis.zRank(ticketStoreService.getEventListKey(), testEventId.toString())
           expect(res).to.deep.equal(testEventId - 1)
         }
       })
       it('전체 Queue를 관리하는 Sorted Set에 항상 최신값이 갱신되어야 한다', async () => {
-        const isRange = (score) =>
-          score <= new Date().valueOf() + 100 &&
-          score >= new Date().valueOf() - 100
+        const isRange = (score) => score <= new Date().valueOf() + 100 && score >= new Date().valueOf() - 100
 
         await chai.request(server).post('/ticket').send({
           eventId: 1,
           userId: 1,
         })
-        const score1 = await redis.zScore(
-          ticketStoreService.getEventListKey(),
-          '1',
-        )
+        const score1 = await redis.zScore(ticketStoreService.getEventListKey(), '1')
 
         expect(isRange(score1)).to.deep.equal(true)
         await sleep(2000)
@@ -80,10 +71,7 @@ describe('Ticket', () => {
           eventId: 1,
           userId: 1,
         })
-        const score2 = await redis.zScore(
-          ticketStoreService.getEventListKey(),
-          '1',
-        )
+        const score2 = await redis.zScore(ticketStoreService.getEventListKey(), '1')
         expect(isRange(score2)).to.deep.equal(true)
       })
 
@@ -126,9 +114,7 @@ describe('Ticket', () => {
           userId: testUserId,
         })
 
-        const res = await chai
-          .request(server)
-          .get(`/ticket/${testEventId}/${testUserId}`)
+        const res = await chai.request(server).get(`/ticket/${testEventId}/${testUserId}`)
         expect(res).to.have.status(200)
         expect(res.body.status).to.deep.equal(true)
       })
@@ -139,9 +125,7 @@ describe('Ticket', () => {
           userId: testUserId,
         })
 
-        const res = await chai
-          .request(server)
-          .get(`/ticket/${testEventId}/${testUserId}`)
+        const res = await chai.request(server).get(`/ticket/${testEventId}/${testUserId}`)
         expect(res.body.data).to.be.an('object')
         expect(res.body.data).to.have.property('eventId')
         expect(res.body.data).to.have.property('userId')
@@ -163,9 +147,7 @@ describe('Ticket', () => {
     })
     describe('실패시', () => {
       it('대기열 티켓이 없을 경우 404 Not Found를 리턴한다', async () => {
-        const res = await chai
-          .request(server)
-          .get(`/ticket/${testEventId}/${testUserId}`)
+        const res = await chai.request(server).get(`/ticket/${testEventId}/${testUserId}`)
         expect(res).to.have.status(404)
         expect(res.body.status).to.deep.equal(false)
       })

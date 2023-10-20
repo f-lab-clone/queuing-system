@@ -10,6 +10,7 @@ describe('Ticket', () => {
   let redis = null
   let ticketStoreService = null
   let jobService = null
+  let container = null
 
   const testEventId = 1
 
