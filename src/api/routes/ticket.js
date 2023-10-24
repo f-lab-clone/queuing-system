@@ -9,10 +9,7 @@ module.exports = (app) => {
 
   router.post(
     '/',
-    validator.mw([
-      validator.body('eventId').isInt(),
-      validator.body('userId').isInt(),
-    ]),
+    validator.mw([validator.body('eventId').isInt(), validator.body('userId').isInt()]),
     container(async (req) => {
       logger.debug('Calling POST /ticket with body: %o', req.body)
       const { eventId, userId } = req.body
@@ -21,31 +18,22 @@ module.exports = (app) => {
 
       await ticketStoreService.updateEventInList(eventId)
       const result = await ticketStoreService.pushIntoWaiting(eventId, userId)
-      result.offset = await ticketStoreService.getOffsetFromWaiting(
-        eventId,
-        userId,
-      )
+      result.offset = await ticketStoreService.getOffsetFromWaiting(eventId, userId)
 
       return CustomResponse(201, `Created!`, result)
-    }),
+    })
   )
 
   router.get(
     '/:eventId/:userId',
-    validator.mw([
-      validator.param('eventId').isInt(),
-      validator.param('userId').isInt(),
-    ]),
+    validator.mw([validator.param('eventId').isInt(), validator.param('userId').isInt()]),
     container(async (req) => {
       logger.debug('Calling GET /ticket with params: %o', req.params)
       const { eventId, userId } = req.params
 
       const ticketStoreService = new TicketStoreService(redis)
       let isWaiting = true
-      let offset = await ticketStoreService.getOffsetFromWaiting(
-        eventId,
-        userId,
-      )
+      let offset = await ticketStoreService.getOffsetFromWaiting(eventId, userId)
       if (offset == null) {
         isWaiting = false
         offset = await ticketStoreService.getOffsetFromRunning(eventId, userId)
@@ -59,6 +47,6 @@ module.exports = (app) => {
         isWaiting,
         offset,
       })
-    }),
+    })
   )
 }

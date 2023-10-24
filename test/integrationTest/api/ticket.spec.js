@@ -17,13 +17,6 @@ describe('Ticket', () => {
   const testEventId = 1
   const testUserId = 1
 
-  async function queueMovingJob(eventId, count) {
-    const tickets = await ticketStoreService.shiftFromWaiting(eventId, count)
-    for (const { value, score } of tickets) {
-      await ticketStoreService.pushIntoRunning(eventId, value, score)
-    }
-  }
-
   beforeAll(async () => {
     container = await new GenericContainer('redis').withExposedPorts(6379).start()
     process.env = {
@@ -41,7 +34,6 @@ describe('Ticket', () => {
   beforeEach(async () => {
     await redis.flushAll()
   })
-
   describe('POST /ticket 은', () => {
     describe('성공시', () => {
       it('전체 Queue를 관리하는 Sorted Set에 EventId를 추가한다', async () => {
