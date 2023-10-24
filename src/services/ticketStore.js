@@ -94,4 +94,11 @@ module.exports = class TicketStore {
   async getLengthOfRunning(eventId) {
     return await this._length(this.getRunningKeyByEventId(eventId))
   }
+
+  async removeticketFromWaiting(eventId, userId) {
+    return this.redis.zRem(this.getWaitingKeyByEventId(eventId), userId)
+  }
+  async removeTicketFromRunning(eventId, userId) {
+    return this.redis.zRem(this.getRunningKeyByEventId(eventId), userId)
+  }
 }

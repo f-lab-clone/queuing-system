@@ -146,4 +146,38 @@ describe('Ticket', () => {
       })
     })
   })
+  describe('DELETE /ticket/running/{eventId}/{userId} 은', () => {
+    describe('삭제 성공시', () => {
+      it('200을 리턴한다', async () => {
+        await ticketStoreService.pushIntoRunning(testEventId, testUserId)
+
+        const res = await chai
+          .request(server)
+          .del(`/ticket/running/${testEventId}/${testUserId}`)
+        expect(res).to.have.status(200)
+        expect(res.body.status).to.deep.equal(true)
+      })
+    })
+    describe('실패시', () => {
+      it('Running 티켓이 없을 경우 404 Not Found를 리턴한다', async () => {
+        const res = await chai
+          .request(server)
+          .del(`/ticket/${testEventId}/${testUserId}`)
+        expect(res).to.have.status(404)
+        expect(res.body.status).to.deep.equal(false)
+      })
+      it('Waiting 티켓이 존재해도, 입장 티켓이 없을 경우 404 Not Found를 리턴한다', async () => {
+        await chai.request(server).post('/ticket').send({
+          eventId: testEventId,
+          userId: testUserId,
+        })
+
+        const res = await chai
+          .request(server)
+          .del(`/ticket/running/${testEventId}/${testUserId}`)
+        expect(res).to.have.status(404)
+        expect(res.body.status).to.deep.equal(false)
+      })
+    })
+  })
 })
