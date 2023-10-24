@@ -9,9 +9,7 @@ chai.use(chaiHttp)
 describe('Health', () => {
   let server = null
   beforeAll(async () => {
-    container = await new GenericContainer('redis')
-      .withExposedPorts(6379)
-      .start()
+    container = await new GenericContainer('redis').withExposedPorts(6379).start()
     process.env = {
       NODE_ENV: 'test',
       REDIS_HOST: container.getHost(),
