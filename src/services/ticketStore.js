@@ -75,11 +75,8 @@ module.exports = class TicketStore {
       userId,
     }
   }
-  async shiftFromWaiting(eventId, userId) {
-    const results = await this._shift(
-      this.getWaitingKeyByEventId(eventId),
-      userId.toString(),
-    )
+  async shiftFromWaiting(eventId, moveCount) {
+    const results = await this._shift(this.getWaitingKeyByEventId(eventId), moveCount)
     return results.map((e) => ({
       timestamp: e.score,
       eventId: Number(e.value),
@@ -90,16 +87,10 @@ module.exports = class TicketStore {
     return this._getOffset(this.getEventListKey(), eventId.toString())
   }
   async getOffsetFromWaiting(eventId, userId) {
-    return this._getOffset(
-      this.getWaitingKeyByEventId(eventId),
-      userId.toString(),
-    )
+    return this._getOffset(this.getWaitingKeyByEventId(eventId), userId.toString())
   }
   async getOffsetFromRunning(eventId, userId) {
-    return this._getOffset(
-      this.getRunningKeyByEventId(eventId),
-      userId.toString(),
-    )
+    return this._getOffset(this.getRunningKeyByEventId(eventId), userId.toString())
   }
   async getLengthOfWaiting(eventId) {
     return await this._length(this.getWaitingKeyByEventId(eventId))
@@ -109,18 +100,10 @@ module.exports = class TicketStore {
   }
 
   async removeWaitingByTimestamp(eventId, minTimestamp, maxTimestamp) {
-    return this._removeByTimestamp(
-      this.getWaitingKeyByEventId(eventId),
-      minTimestamp,
-      maxTimestamp,
-    )
+    return this._removeByTimestamp(this.getWaitingKeyByEventId(eventId), minTimestamp, maxTimestamp)
   }
   async removeRunningByTimestamp(eventId, minTimestamp, maxTimestamp) {
-    return this._removeByTimestamp(
-      this.getRunningKeyByEventId(eventId),
-      minTimestamp,
-      maxTimestamp,
-    )
+    return this._removeByTimestamp(this.getRunningKeyByEventId(eventId), minTimestamp, maxTimestamp)
   }
   async removeAllOfWaiting(eventId) {
     return this.redis.del(this.getWaitingKeyByEventId(eventId))
@@ -130,18 +113,10 @@ module.exports = class TicketStore {
   }
 
   async removeEventIdByTimestamp(minTimestamp, maxTimestamp) {
-    return this._removeByTimestamp(
-      this.getEventListKey(),
-      minTimestamp,
-      maxTimestamp,
-    )
+    return this._removeByTimestamp(this.getEventListKey(), minTimestamp, maxTimestamp)
   }
   async getEventIdByTimestamp(minTimestamp, maxTimestamp) {
-    const results = await this._getByTimestamp(
-      this.getEventListKey(),
-      minTimestamp,
-      maxTimestamp,
-    )
+    const results = await this._getByTimestamp(this.getEventListKey(), minTimestamp, maxTimestamp)
     return results.map((e) => Number(e))
   }
 }
