@@ -75,6 +75,7 @@ module.exports = class TicketStore {
       userId,
     }
   }
+
   async shiftFromWaiting(eventId, moveCount) {
     const results = await this._shift(this.getWaitingKeyByEventId(eventId), moveCount)
     return results.map((e) => ({

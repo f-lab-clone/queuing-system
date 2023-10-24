@@ -9,6 +9,7 @@ chai.use(chaiHttp)
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 describe('Ticket', () => {
+  let container = null
   let server = null
   let redis = null
   let ticketStoreService = null
