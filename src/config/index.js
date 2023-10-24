@@ -12,6 +12,10 @@ const normalizePort = (val) => {
 module.exports = {
   NODE_ENV: process.env.NODE_ENV,
   port: normalizePort(process.argv[2] || process.env.PORT),
+  redis: {
+    host: process.env.REDIS_HOST,
+    port: process.env.REDIS_PORT,
+  },
 
   logs: {
     level: process.env.LOG_LEVEL || 'silly',
