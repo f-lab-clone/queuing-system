@@ -49,4 +49,19 @@ module.exports = (app) => {
       })
     })
   )
+
+  router.delete(
+    '/running/:eventId/:userId',
+    validator.mw([validator.param('eventId').isInt(), validator.param('userId').isInt()]),
+    container(async (req) => {
+      logger.debug('Calling DELETE /ticket with params: %o', req.params)
+      const { eventId, userId } = req.params
+
+      const ticketStoreService = new TicketStoreService(redis)
+      const offset = await ticketStoreService.getOffsetFromRunning(eventId, userId)
+      if (offset == null) return CustomResponse(404, `Ticket Not Found!`)
+      await ticketStoreService.removeTicketFromRunning(eventId, userId)
+      return CustomResponse(200, `Success Delete!`)
+    })
+  )
 }

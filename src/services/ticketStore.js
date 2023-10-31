@@ -120,4 +120,7 @@ module.exports = class TicketStore {
     const results = await this._getByTimestamp(this.getEventListKey(), minTimestamp, maxTimestamp)
     return results.map((e) => Number(e))
   }
+  async removeTicketFromRunning(eventId, userId) {
+    return this.redis.zRem(this.getRunningKeyByEventId(eventId), userId)
+  }
 }
